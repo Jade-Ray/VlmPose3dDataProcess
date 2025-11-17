@@ -1,0 +1,14 @@
+data/
+results/
+
+# ignore all pyc files
+*.pyc
+
+# ignore all vscode files
+.vscode/
+
+# ignore all log files
+*.log
+
+# ignore all ipynb files
+*.ipynb
