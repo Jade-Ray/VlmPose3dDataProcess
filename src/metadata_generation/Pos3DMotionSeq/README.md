@@ -13,9 +13,9 @@ This section outlines the initial steps to prepare the raw Pos3DMotionSeq datase
 │   │   │   ├──pose3d/
 │   │   │   │   ├──hmr4d_results_merged.json
 │   │   ├──...
-│   ├──Pos3DMotionSeq_train.txt
-│   ├──Pos3DMotionSeq_val.txt
-│   ├──Pos3DMotionSeq_test.txt
+│   ├──train.txt
+│   ├──val.txt
+│   ├──test.txt
 ```
 
 # 2. get metadata
@@ -26,9 +26,9 @@ This step gathers information from the preprocessed dataset. It typically includ
 
 ```bash
 python -m src.metadata_generation.Pos3DMotionSeq.pos3dmotion_metadata \
-    --processed_dir "data/Pose3DMotionSeq" \
-    --scene_list_file "data/Pose3DMotionSeq/Pose3DMotionSeq_train.txt" \
-    --save_dir "data/processed_data/Pose3DMotionSeq/train" \
+    --processed_dir "data/Pos3DMotionSeq" \
+    --scene_list_file "data/Pos3DMotionSeq/train.txt" \
+    --save_dir "data/processed_data/Pos3DMotionSeq/train" \
     --output_filename "pos3dmotion_metadata_train.json" \
     --num_workers "64" \
     --overwrite \

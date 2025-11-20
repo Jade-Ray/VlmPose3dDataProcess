@@ -60,7 +60,7 @@ class Pose3DMotionProcessor(AbstractSceneProcessor[Pose3DMotionProcessorConfig])
         """Loads the list of scene IDs from the specified file."""
         logger.info(f"Loading scene list from: {self.config.scene_list_file}")
         try:
-            with open(self.config.scene_list_file, 'r') as f:
+            with open(self.config.scene_list_file, 'r', encoding='utf-8') as f:
                 scene_ids = [line.strip() for line in f if line.strip()]
             logger.info(f"Loaded {len(scene_ids)} scene IDs.")
             return scene_ids
@@ -74,22 +74,27 @@ class Pose3DMotionProcessor(AbstractSceneProcessor[Pose3DMotionProcessorConfig])
         processed_scene_base = self.config.processed_dir
         
         # Define paths for data
-        desc_path = Path(processed_scene_base) / f"description/{scene_id}_Medium_②.json"
-        pose_path = Path(processed_scene_base) / f"pose3d/hmr4d_results_merged.json"
+        data_base = Path(processed_scene_base) / "data" / scene_id
+        desc_path = data_base / "description" / f"{scene_id}_Medium_②.json"
+        pose_path = data_base / "pose3d" / "hmr4d_results_merged.json"
         
         # --- 1. Read Pose3D Data ---
         try:
             with open(pose_path, 'r') as f:
                 pose3d_data = json.load(f)
-            all_body_pose = np.array(pose3d_data['1']['net_outputs']['pred_smpl_params_incam']['body_pose'])[0] # (T, 63)
-            all_global_orient = np.array(pose3d_data['1']['net_outputs']['pred_smpl_params_incam']['global_orient'])[0] # (T, 3)
+            all_body_pose, all_global_orient = [], []
+            for obj_id in pose3d_data.keys():
+                all_body_pose.append(pose3d_data[obj_id]['net_outputs']['pred_smpl_params_incam']['body_pose'][0]) # (T, 63)
+                all_global_orient.append(pose3d_data[obj_id]['net_outputs']['pred_smpl_params_incam']['global_orient'][0]) # (T, 3)
+            all_body_pose = np.array(all_body_pose) # (N, T, 63)
+            all_global_orient = np.array(all_global_orient) # (N, T, 3)
         except FileNotFoundError:
             logger.error(f"Pose3D data file not found for scene {scene_id}: {pose_path}")
             return None
         
         # --- 2. Read Action Description ---
         try:
-            with open(desc_path, 'r') as f:
+            with open(desc_path, 'r', encoding='utf-8') as f:
                 desc_data = json.load(f)
             description = desc_data['description']
         except FileNotFoundError:
@@ -98,14 +103,17 @@ class Pose3DMotionProcessor(AbstractSceneProcessor[Pose3DMotionProcessorConfig])
         
         # --- 3. Process Each Sample Frame ---
         frame_data = []
-        for i, (body_pose, global_orient) in enumerate(zip(all_body_pose, all_global_orient)):
+        for i in range(all_body_pose.shape[1]):
+            body_poses = []
             # --- 3a. Process Full Body Pose --- 
-            body_pose = SMPL21Joint._check_body_pose(body_pose) # (21, 3)
-            full_body_pose = np.vstack([global_orient, body_pose], axis=0) # (22, 3)
+            for body_pose, global_orient in zip(all_body_pose[:, i, :], all_global_orient[:, i, :]):
+                body_pose = SMPL21Joint._check_body_pose(body_pose) # (21, 3)
+                full_body_pose = np.vstack([global_orient.reshape(1, 3), body_pose]) # (22, 3)
+                body_poses.append(full_body_pose)
             # --- 3b. Assemble Frame Information ---
             frame_info = {
                 "frame_index": i,
-                "body_pose": full_body_pose, # (22, 3)
+                "body_poses": body_poses, # (N, 22, 3)
             }
             frame_data.append(frame_info)
         

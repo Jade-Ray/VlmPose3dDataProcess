@@ -94,11 +94,11 @@ class AbstractSceneProcessor(ABC, Generic[TConfig]):
 
         logger.info(f"Saving aggregated metadata for {len(results)} scenes to {output_path}")
         try:
-            with output_path.open("w") as f:
+            with output_path.open("w", encoding="utf-8") as f:
                 # Use separators for compact storage, indent=None for smallest file size
                 # json.dump(results, f, separators=(',', ':'))
                 # Or use indent=4 for human-readable output:
-                json.dump(results, f, indent=4, default=json_converter)
+                json.dump(results, f, indent=4, default=json_converter, ensure_ascii=False)
             logger.info(f"Successfully saved results to {output_path}")
         except Exception as e:
             logger.exception(f"Failed to save results to {output_path}: {e}") # Use logger.exception to include traceback
