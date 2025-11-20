@@ -84,12 +84,28 @@ class Pose3DMotionProcessor(AbstractSceneProcessor[Pose3DMotionProcessorConfig])
                 pose3d_data = json.load(f)
             all_body_pose, all_global_orient = [], []
             for obj_id in pose3d_data.keys():
-                all_body_pose.append(pose3d_data[obj_id]['net_outputs']['pred_smpl_params_incam']['body_pose'][0]) # (T, 63)
-                all_global_orient.append(pose3d_data[obj_id]['net_outputs']['pred_smpl_params_incam']['global_orient'][0]) # (T, 3)
-            all_body_pose = np.array(all_body_pose) # (N, T, 63)
-            all_global_orient = np.array(all_global_orient) # (N, T, 3)
+                body_pose = np.array(pose3d_data[obj_id]['net_outputs']['pred_smpl_params_incam']['body_pose'][0]) # (T, 63)
+                global_orient = np.array(pose3d_data[obj_id]['net_outputs']['pred_smpl_params_incam']['global_orient'][0]) # (T, 3)
+                frame_num = body_pose.shape[0]
+                if frame_num > 300:
+                    logger.warning(f"Scene {scene_id}, Object {obj_id} has {frame_num} frames, exceeding 300. Skipping this object.")
+                    continue
+                elif frame_num > 200:
+                    body_pose = body_pose[::3, :]
+                    global_orient = global_orient[::3, :]
+                elif frame_num > 100:
+                    body_pose = body_pose[::2, :]
+                    global_orient = global_orient[::2, :]
+                all_body_pose.append(body_pose)
+                all_global_orient.append(global_orient)
+            all_body_pose = np.array(all_body_pose) # (N, T', 63)
+            all_global_orient = np.array(all_global_orient) # (N, T', 3)
         except FileNotFoundError:
             logger.error(f"Pose3D data file not found for scene {scene_id}: {pose_path}")
+            return None
+        
+        if len(all_body_pose) == 0 or len(all_global_orient) == 0:
+            logger.warning(f"No valid objects processed for scene {scene_id}. Skipping scene.")
             return None
         
         # --- 2. Read Action Description ---
