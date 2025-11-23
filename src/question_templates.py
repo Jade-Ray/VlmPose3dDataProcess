@@ -9,6 +9,6 @@ SIMPLE_POSE_TEMPLATE = """
 4. 若某帧无明显变化，可保持与前一帧一致。
 5. 以 JSON 格式回答，形式如下：
 ```JSON
-[{"body_pose": [[[ax, ay, az], ... (22 joints)]], ... (NUM_FRAMES)]}, ... (NUM_OBJ)]
+[{{"body_pose": [[[ax, ay, az], ... (22 joints)]], ... (NUM_FRAMES)]}}, ... (NUM_OBJ)]
 ```
 """.strip()

@@ -1,6 +1,7 @@
 import random
 import logging
 import json
+import numpy as np
 
 from dataclasses import dataclass
 
@@ -25,14 +26,19 @@ class SimplePoseQAGenerator(BaseQAGenerator[SimplePoseQAGeneratorConfig]):
     
     def __init__(self, config: SimplePoseQAGeneratorConfig):
         super().__init__(config)
-
+    
+    @classmethod
+    def _add_specific_arguments(cls, parser):
+        parser.add_argument('--question_template', type=str, default=SimplePoseQAGeneratorConfig.question_template, help='Name of the question template constant from question_templates.py.')
+        parser.add_argument('--output_filename', type=str, default=SimplePoseQAGeneratorConfig.output_filename, help='the output JSON filename (e.g., "qa_obj_count").')
+    
     def _generate_json_answer(self, objects_body_pose):
         """Generate JSON formatted answer for body poses."""
         answer = []
         for obj_idx in sorted(objects_body_pose.keys()):
             body_pose_seq = objects_body_pose[obj_idx]
             answer.append({
-                "body_pose": body_pose_seq
+                "body_pose": np.round(np.array(body_pose_seq), decimals=2).tolist()
             })
         json_str = json.dumps(answer)
         return f"```JSON\n{json_str}\n```"

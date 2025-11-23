@@ -26,3 +26,30 @@ A JSON file containing metadata for each scene.
     ... // other scenes
 }
 ```
+
+## 1. Upload Processed Data to Hugging Face Hub
+
+After generating the QA datasets, due to different tasks having different answer formats (multiple-choice, JSON, etc.), we provide a script `hf_upload.py` to convert these datasets into a conversational format and upload them to the Hugging Face Hub.
+
+### Prerequisites
+
+Ensure you have the required libraries installed:
+
+```bash
+pip install huggingface_hub
+```
+
+### Usage
+
+- Just covert the generated QA JSON files to conversational format, and save them to a specified output directory.
+
+    ```bash
+    python hf_upload.py --input_dir data/qa_output --split_type val --output_dir data/vlm_pose3d_data
+    ```
+
+- Convert and upload the datasets to Hugging Face Hub. Make sure to set your repository name.
+
+    ```bash
+    python hf_upload.py --input_dir data/qa_output --split_type val --output_dir data/vlm_pose3d_data --repo_name your_hf_repo_name
+    ```
+

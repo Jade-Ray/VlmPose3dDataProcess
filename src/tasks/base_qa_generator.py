@@ -32,6 +32,7 @@ class BaseQAGeneratorConfig:
     task_name: str = "" # Should be set by subclasses or arguments
     
     def __post_init__(self):
+        self.processed_data_path += f"/{self.dataset}"
         self.question_type = f"{self.task_name}"
         if self.output_filename == "":
             self.output_filename = f"qa_{self.task_name}.json"
@@ -101,7 +102,7 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
             logger.warning("No path provided for a metadata file.")
             return None
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             logger.info(f"Successfully loaded metadata from {file_path}")
             return data
@@ -155,8 +156,8 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
         output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Saving QA pairs to {qa_path}...")
         try:
-            with open(qa_path, 'w') as f:
-                json.dump(all_qa_list, f, indent=4)
+            with open(qa_path, 'w', encoding='utf-8') as f:
+                json.dump(all_qa_list, f, indent=4, ensure_ascii=False)
             logger.info(f"Successfully saved QA pairs to {qa_path}")
         except IOError as e:
             logger.error(f"Failed to write output file {qa_path}: {e}")
