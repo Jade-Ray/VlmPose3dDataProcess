@@ -80,22 +80,31 @@ class Pose3DMotionProcessor(AbstractSceneProcessor[Pose3DMotionProcessorConfig])
         
         # --- 1. Read Pose3D Data ---
         try:
-            with open(pose_path, 'r') as f:
+            with open(pose_path, 'r', encoding='utf-8') as f:
                 pose3d_data = json.load(f)
             all_body_pose, all_global_orient = [], []
-            for obj_id in pose3d_data.keys():
+            obj_ids = list(pose3d_data.keys())
+            # TODO: multi-object scene is too many pos3d data to handle now, skip them
+            if len(obj_ids) > 1:
+                logger.warning(f"Scene {scene_id} has multiple objects ({len(obj_ids)}). Skipping this scene.")
+                return None
+            for obj_id in obj_ids:
                 body_pose = np.array(pose3d_data[obj_id]['net_outputs']['pred_smpl_params_incam']['body_pose'][0]) # (T, 63)
                 global_orient = np.array(pose3d_data[obj_id]['net_outputs']['pred_smpl_params_incam']['global_orient'][0]) # (T, 3)
                 frame_num = body_pose.shape[0]
+                # 20 frames limit for now
                 if frame_num > 300:
                     logger.warning(f"Scene {scene_id}, Object {obj_id} has {frame_num} frames, exceeding 300. Skipping this object.")
                     continue
                 elif frame_num > 200:
-                    body_pose = body_pose[::3, :]
-                    global_orient = global_orient[::3, :]
+                    body_pose = body_pose[::15, :]
+                    global_orient = global_orient[::15, :]
                 elif frame_num > 100:
-                    body_pose = body_pose[::2, :]
-                    global_orient = global_orient[::2, :]
+                    body_pose = body_pose[::10, :]
+                    global_orient = global_orient[::10, :]
+                elif frame_num > 50:
+                    body_pose = body_pose[::5, :]
+                    global_orient = global_orient[::5, :]
                 all_body_pose.append(body_pose)
                 all_global_orient.append(global_orient)
             all_body_pose = np.array(all_body_pose) # (N, T', 63)

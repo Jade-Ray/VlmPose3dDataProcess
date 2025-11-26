@@ -1,5 +1,6 @@
 data/
 results/
+cache/
 
 # ignore all pyc files
 *.pyc
