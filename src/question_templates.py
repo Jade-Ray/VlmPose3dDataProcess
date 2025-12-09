@@ -12,3 +12,17 @@ SIMPLE_POSE_TEMPLATE = """
 [{{"body_pose": [[[ax, ay, az], ... (22 joints)]], ... (NUM_FRAMES)]}}, ... (NUM_OBJ)]
 ```
 """.strip()
+
+SINGLE_POSE_TEMPLATE = """
+请根据以下人体动作描述生成 3D 人体骨架关节坐标序列。
+动作描述：{ACTION_DESC}
+要求：
+1. 人体骨架包含22个关节，顺序如下：
+{JOINT_NAMES}
+2. 每个关节以三维坐标表示，格式为 [x, y, z]，单位为米。
+3. 根节点默认为零，只用生成其余21个关节的坐标。
+4. 以 JSON 格式回答，形式如下：
+```JSON
+[[x, y, z], ... (21 joints)]
+```
+""".strip()

@@ -84,7 +84,7 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
     def _load_annotations(self):
         split_type = self.config.split_type
         dataset_name_lower = self.config.dataset.lower()
-        metadata_path = Path(self.config.processed_data_path) / split_type
+        metadata_path = Path(self.config.processed_data_path)
         assert metadata_path.exists(), f"Metadata path does not exist: {metadata_path}"
         scene_meta_path = metadata_path / f"{dataset_name_lower}_metadata_{split_type}.json"
         self.scene_annos = self._load_json(scene_meta_path)
