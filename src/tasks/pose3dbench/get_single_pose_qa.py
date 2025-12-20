@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SinglePoseQAGeneratorConfig(BaseQAGeneratorConfig):
     """Configuration for single pose question-answer generation."""
-    output_filename: str = "" # If empty, will be set based on indictor_type and answer_type
+    output_filename: str = "" # If empty, will be set based on task_name
     processed_data_path: str = "processed_data"
     dataset: str = "SinglePose"
     split_type: str = "train"

@@ -15,16 +15,16 @@ logger = get_logger(__name__, log_file="pose3dmotion_metadata_generation.log")
 
 
 @dataclass
-class Pose3DSingleProcessorConfig(BaseProcessorConfig):
-    """Configuration for Pose3DSingle metadata generation."""
-    processed_dir: str = "data/Pos3DMotionSeq/SinglePose"
-    save_dir: str = "data/processed_data/SinglePose"
+class SimplePoseProcessorConfig(BaseProcessorConfig):
+    """Configuration for SimplePose metadata generation."""
+    processed_dir: str = "data/Pos3DMotionSeq/simple_pose_1w"
+    save_dir: str = "data/processed_data/SimplePose"
 
 
-class Pose3DSingleProcessor(AbstractSceneProcessor[Pose3DSingleProcessorConfig]):
-    """Processor for generating metadata for Pose3DSingle dataset."""
+class SimplePoseProcessor(AbstractSceneProcessor[SimplePoseProcessorConfig]):
+    """Processor for generating metadata for SimplePose dataset."""
     
-    def __init__(self, config: Pose3DSingleProcessorConfig):
+    def __init__(self, config: SimplePoseProcessorConfig):
         super().__init__(config)
         # Validate essential directories early
         if not Path(self.config.processed_dir).is_dir():
@@ -51,20 +51,22 @@ class Pose3DSingleProcessor(AbstractSceneProcessor[Pose3DSingleProcessorConfig])
         try:
             with open(pose_path, 'r', encoding='utf-8') as f:
                 pose3d_data = json.load(f)
-            body_pose = np.array(pose3d_data['joints']) # (22, 3) 坐标表示
-            body_pose = body_pose - body_pose[0] # Normalize root joint to origin
+            body_motion_pose = np.array(pose3d_data) # (T, 22, 3) 坐标表示
+            body_motion_pose = body_motion_pose - body_motion_pose[0, 0, :] # Normalize first root joint to origin
         except FileNotFoundError:
             logger.error(f"Pose3D data file not found for scene {scene_id}: {pose_path}")
             return None
         
         # --- 2. Read Action Description ---
-        description = str(scene_id).replace('_', ' ')
+        description = str(scene_id).split(".")[1][1:]
         
-        # --- 3. Process Single Sample Frame ---
-        frame_data = [{
-            "frame_index": 0,
-            "body_poses": [body_pose], # (1, 22, 3) for single object
-        }]
+        # --- 3. Process Each Sample Frame ---
+        frame_data = []
+        for i, body_pose in enumerate(body_motion_pose):
+            frame_data.append({
+                "frame_index": i,
+                "body_poses": [body_pose], # (1, 22, 3) for single object
+            })
         
         # --- 4. Final Scene Summary ---
         return {
@@ -77,16 +79,16 @@ class Pose3DSingleProcessor(AbstractSceneProcessor[Pose3DSingleProcessorConfig])
 # --- Main Execution Logic ---
 
 def main():
-    parser = argparse.ArgumentParser(description="Process Pose3DSingle metadata based on the original data.")
+    parser = argparse.ArgumentParser(description="Process Simple Pose metadata based on the original data.")
     
     # Arguments for input data locations
-    parser.add_argument('--processed_dir', type=str, default=Pose3DSingleProcessorConfig.processed_dir, 
+    parser.add_argument('--processed_dir', type=str, default=SimplePoseProcessorConfig.processed_dir, 
                         help='Directory containing sampled description/pose3d subdirs.')
     
     # Arguments for output and processing behavior (from BaseProcessorConfig)
-    parser.add_argument('--save_dir', type=str, default=Pose3DSingleProcessorConfig.save_dir, # Use base default initially
-                        help=f'Directory to save the output JSON metadata (defaults to processed_dir: {Pose3DSingleProcessorConfig.processed_dir}).')
-    parser.add_argument('--output_filename', type=str, default="Pose3DSingle_metadata.json", # Keep default name
+    parser.add_argument('--save_dir', type=str, default=SimplePoseProcessorConfig.save_dir, # Use base default initially
+                        help=f'Directory to save the output JSON metadata (defaults to processed_dir: {SimplePoseProcessorConfig.processed_dir}).')
+    parser.add_argument('--output_filename', type=str, default="simple_pose_metadata.json", # Keep default name
                         help='Name of the output JSON file.')
     parser.add_argument('--num_workers', type=int, default=BaseProcessorConfig.num_workers,
                         help='Number of worker processes for parallel processing.')
@@ -98,7 +100,7 @@ def main():
     args = parser.parse_args()
     
     # Create config object using parsed arguments
-    config = Pose3DSingleProcessorConfig(
+    config = SimplePoseProcessorConfig(
         processed_dir=args.processed_dir,
         save_dir=args.save_dir, # Pass user value or base default
         output_filename=args.output_filename,
@@ -108,8 +110,8 @@ def main():
     )
     
     # Initialize and run the processor
-    logger.info("Starting Pose3DSingle metadata processing...")
-    processor = Pose3DSingleProcessor(config)
+    logger.info("Starting simple pose metadata processing...")
+    processor = SimplePoseProcessor(config)
     processor.process_all_scenes()
 
 

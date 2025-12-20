@@ -8,7 +8,7 @@ import numpy as np
 
 from src.base_processor import BaseProcessorConfig, AbstractSceneProcessor
 from src.utils.logging import get_logger
-from src.metadata_generation.Pos3DMotionSeq.SMPL import SMPL21Joint
+from src.metadata_generation.SMPL import SMPL21Joint
 
 
 logger = get_logger(__name__, log_file="pose3dmotion_metadata_generation.log")
