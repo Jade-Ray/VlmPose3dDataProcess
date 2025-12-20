@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Dict, Any, TypeVar, Generic
 from multiprocessing import Pool
+from itertools import islice
 import tqdm
 import random
 import numpy as np
@@ -85,23 +86,39 @@ class AbstractSceneProcessor(ABC, Generic[TConfig]):
     def _save_results(self, results: Dict[str, Any]):
         """Saves the aggregated results dictionary to a JSON file using pathlib.Path."""
         save_dir = Path(self.config.save_dir)
-        output_path = save_dir / self.config.output_filename
-        save_dir.mkdir(parents=True, exist_ok=True)
-
-        if output_path.exists() and not self.config.overwrite:
-            logger.error(f"Output file exists and overwrite is False: {output_path}. Aborting save.")
+        save_max_len = 2000
+        if len(results) >= save_max_len:
+            logger.info(f"Results length {len(results)} exceeds save_max_len={save_max_len}. Saving in batches...")
+            items_iter = iter(results.items())
+            i = 0
+            while True:
+                # lazyly get the next batch of items
+                batch_items = dict(islice(items_iter, save_max_len))
+                if not batch_items:
+                    break
+                batch_output_path = save_dir / f"{self.config.output_filename}_{i:02d}.json"
+                logger.info(f"Saving batch {i} with {len(batch_items)} scenes to {batch_output_path}")
+                self._save_json(batch_items, batch_output_path, indent=None)
+                i += 1
+        else:       
+            output_path = save_dir / f"{self.config.output_filename}.json"
+            logger.info(f"Saving aggregated metadata for {len(results)} scenes to {output_path}")
+            self._save_json(results, output_path, indent=4)
+        
+    def _save_json(self, data: Any, file_path: Path, indent: int = 4):
+        file_path.mkdir(parents=True, exist_ok=True)
+        if file_path.exists() and not self.config.overwrite:
+            logger.error(f"Output file exists and overwrite is False: {file_path}. Aborting save.")
             return # Or raise an error if preferred
-
-        logger.info(f"Saving aggregated metadata for {len(results)} scenes to {output_path}")
         try:
-            with output_path.open("w", encoding="utf-8") as f:
+            with file_path.open("w", encoding="utf-8") as f:
                 # Use separators for compact storage, indent=None for smallest file size
                 # json.dump(results, f, separators=(',', ':'))
                 # Or use indent=4 for human-readable output:
-                json.dump(results, f, indent=4, default=json_converter, ensure_ascii=False)
-            logger.info(f"Successfully saved results to {output_path}")
+                json.dump(data, f, indent=indent, separators=(',', ':'), default=json_converter, ensure_ascii=False)
+            logger.info(f"Successfully saved results to {file_path}")
         except Exception as e:
-            logger.exception(f"Failed to save results to {output_path}: {e}") # Use logger.exception to include traceback
+            logger.exception(f"Failed to save results to {file_path}: {e}") # Use logger.exception to include traceback
     
     def process_all_scenes(self):
         """

@@ -87,7 +87,7 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
         metadata_path = Path(self.config.processed_data_path)
         assert metadata_path.exists(), f"Metadata path does not exist: {metadata_path}"
         scene_meta_path = metadata_path / f"{dataset_name_lower}_metadata_{split_type}.json"
-        self.scene_annos = self._load_json(scene_meta_path)
+        self.scene_annos = self._load_json_batched(scene_meta_path)
         self.scene_list = list(self.scene_annos.keys()) if self.scene_annos else []
         
         logger.info(f"Processed data paths constructed based on : {self.config.processed_data_path}, Dataset: {self.config.dataset}, Split: {split_type}")
@@ -96,8 +96,32 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
         else:
             logger.info(f"Scene metadata path: {scene_meta_path}")
     
+    def _load_json_batched(self, file_path):
+        """Load JSON data, supporting both single and batched files."""
+        if file_path.exists():
+            return self._load_json(file_path)
+        
+        pattern = f"{file_path.stem}_*.json"
+        batch_files = sorted(file_path.parent.glob(pattern))
+        if not batch_files:
+            logger.warning(f"No batch files found matching pattern: {pattern}")
+            return None
+        
+        merged: Dict[str, Any] = {}
+        for batch_file in batch_files:
+            batch_data = self._load_json(batch_file)
+            if not batch_data:
+                continue
+            overlap = set(merged.keys()) & set(batch_data.keys())
+            if overlap:
+                logger.warning(f"Duplicate keys found when merging batch file {batch_file}: {len(overlap)} overlapping keys.")
+            merged.update(batch_data)
+        
+        logger.info(f"Merged {len(batch_files)} batch files into a single metadata dictionary with {len(merged)} total scenes.")
+        return merged
+    
     def _load_json(self, file_path):
-        """Loads JSON data from a file."""
+        """Load JSON data from a file."""
         if not file_path:
             logger.warning("No path provided for a metadata file.")
             return None
