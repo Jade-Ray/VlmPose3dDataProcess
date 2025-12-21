@@ -15,16 +15,16 @@ logger = get_logger(__name__, log_file="pose3dmotion_metadata_generation.log")
 
 
 @dataclass
-class Pose3DSingleProcessorConfig(BaseProcessorConfig):
-    """Configuration for Pose3DSingle metadata generation."""
+class SinglePoseProcessorConfig(BaseProcessorConfig):
+    """Configuration for SinglePose metadata generation."""
     processed_dir: str = "data/Pos3DMotionSeq/SinglePose"
     save_dir: str = "data/processed_data/SinglePose"
 
 
-class Pose3DSingleProcessor(AbstractSceneProcessor[Pose3DSingleProcessorConfig]):
-    """Processor for generating metadata for Pose3DSingle dataset."""
+class SinglePoseProcessor(AbstractSceneProcessor[SinglePoseProcessorConfig]):
+    """Processor for generating metadata for SinglePose dataset."""
     
-    def __init__(self, config: Pose3DSingleProcessorConfig):
+    def __init__(self, config: SinglePoseProcessorConfig):
         super().__init__(config)
         # Validate essential directories early
         if not Path(self.config.processed_dir).is_dir():
@@ -72,21 +72,23 @@ class Pose3DSingleProcessor(AbstractSceneProcessor[Pose3DSingleProcessorConfig])
             "description": description,
             "frames": frame_data,
         }
-
+    
+    def _save_results(self, results: Dict[str, Any], save_max_len: int = 2000):
+        super()._save_results(results, save_max_len=1000000)  # Set high limit to avoid batching for this dataset
 
 # --- Main Execution Logic ---
 
 def main():
-    parser = argparse.ArgumentParser(description="Process Pose3DSingle metadata based on the original data.")
+    parser = argparse.ArgumentParser(description="Process SinglePose metadata based on the original data.")
     
     # Arguments for input data locations
-    parser.add_argument('--processed_dir', type=str, default=Pose3DSingleProcessorConfig.processed_dir, 
+    parser.add_argument('--processed_dir', type=str, default=SinglePoseProcessorConfig.processed_dir, 
                         help='Directory containing sampled description/pose3d subdirs.')
     
     # Arguments for output and processing behavior (from BaseProcessorConfig)
-    parser.add_argument('--save_dir', type=str, default=Pose3DSingleProcessorConfig.save_dir, # Use base default initially
-                        help=f'Directory to save the output JSON metadata (defaults to processed_dir: {Pose3DSingleProcessorConfig.processed_dir}).')
-    parser.add_argument('--output_filename', type=str, default="Pose3DSingle_metadata.json", # Keep default name
+    parser.add_argument('--save_dir', type=str, default=SinglePoseProcessorConfig.save_dir, # Use base default initially
+                        help=f'Directory to save the output JSON metadata (defaults to processed_dir: {SinglePoseProcessorConfig.processed_dir}).')
+    parser.add_argument('--output_filename', type=str, default="single_pose_metadata_train", # Keep default name
                         help='Name of the output JSON file.')
     parser.add_argument('--num_workers', type=int, default=BaseProcessorConfig.num_workers,
                         help='Number of worker processes for parallel processing.')
@@ -98,7 +100,7 @@ def main():
     args = parser.parse_args()
     
     # Create config object using parsed arguments
-    config = Pose3DSingleProcessorConfig(
+    config = SinglePoseProcessorConfig(
         processed_dir=args.processed_dir,
         save_dir=args.save_dir, # Pass user value or base default
         output_filename=args.output_filename,
@@ -109,7 +111,7 @@ def main():
     
     # Initialize and run the processor
     logger.info("Starting Pose3DSingle metadata processing...")
-    processor = Pose3DSingleProcessor(config)
+    processor = SinglePoseProcessor(config)
     processor.process_all_scenes()
 
 

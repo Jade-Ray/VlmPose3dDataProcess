@@ -16,9 +16,7 @@ logger = logging.getLogger(__name__)
 class SimplePoseBSplineQAGeneratorConfig(BaseQAGeneratorConfig):
     """Configuration for simple pose B-spline question-answer generation."""
     output_filename: str = "" # If empty, will be set based on task_name
-    processed_data_path: str = "processed_data"
     dataset: str = "SimplePose"
-    split_type: str = "train"
     question_template: str = "SIMPLE_POSE_BSPLINE_TEMPLATE"
     task_name: str = "simple_pose_bspline"
 
@@ -31,6 +29,7 @@ class SimplePoseBSplineQAGenerator(BaseQAGenerator[SimplePoseBSplineQAGeneratorC
     
     @classmethod
     def _add_specific_arguments(cls, parser):
+        parser.add_argument('--dataset', type=str, default=SimplePoseBSplineQAGeneratorConfig.dataset, help='Name of the dataset.')
         parser.add_argument('--question_template', type=str, default=SimplePoseBSplineQAGeneratorConfig.question_template, help='Name of the question template constant from question_templates.py.')
         parser.add_argument('--output_filename', type=str, default=SimplePoseBSplineQAGeneratorConfig.output_filename, help='the output JSON filename (e.g., "qa_obj_count").')
     

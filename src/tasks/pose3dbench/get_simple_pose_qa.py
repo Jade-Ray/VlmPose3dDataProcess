@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
 class SimplePoseQAGeneratorConfig(BaseQAGeneratorConfig):
     """Configuration for simple pose question-answer generation."""
     output_filename: str = "" # If empty, will be set based on task_name
-    processed_data_path: str = "processed_data"
-    split_type: str = "train"
+    dataset: str = "SimplePose"
     question_template: str = "SIMPLE_POSE_TEMPLATE"
     task_name: str = "simple_pose"
 

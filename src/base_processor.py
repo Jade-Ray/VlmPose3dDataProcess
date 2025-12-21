@@ -83,10 +83,10 @@ class AbstractSceneProcessor(ABC, Generic[TConfig]):
         """
         pass
     
-    def _save_results(self, results: Dict[str, Any]):
+    def _save_results(self, results: Dict[str, Any], save_max_len: int = 2000):
         """Saves the aggregated results dictionary to a JSON file using pathlib.Path."""
         save_dir = Path(self.config.save_dir)
-        save_max_len = 2000
+        save_dir.mkdir(parents=True, exist_ok=True)
         if len(results) >= save_max_len:
             logger.info(f"Results length {len(results)} exceeds save_max_len={save_max_len}. Saving in batches...")
             items_iter = iter(results.items())
@@ -106,7 +106,6 @@ class AbstractSceneProcessor(ABC, Generic[TConfig]):
             self._save_json(results, output_path, indent=4)
         
     def _save_json(self, data: Any, file_path: Path, indent: int = 4):
-        file_path.mkdir(parents=True, exist_ok=True)
         if file_path.exists() and not self.config.overwrite:
             logger.error(f"Output file exists and overwrite is False: {file_path}. Aborting save.")
             return # Or raise an error if preferred

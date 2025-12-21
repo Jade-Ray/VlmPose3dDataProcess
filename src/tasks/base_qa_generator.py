@@ -1,4 +1,5 @@
 import json
+import re
 import argparse
 import tqdm
 import logging
@@ -16,6 +17,12 @@ import src.question_templates as prompt_templates
 logger = logging.getLogger(__name__)
 
 TConfig = TypeVar('TConfig', bound='BaseQAGeneratorConfig')
+
+
+def camera_to_snake(name: str) -> str:
+    """Convert CamelCase or camelCase to snake_case."""
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
 @dataclass
@@ -64,7 +71,6 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
         parser.add_argument('--split_type', type=str, help='Type of split to use (e.g., "train", "val", "test").')
         parser.add_argument('--processed_data_path', type=str, required=True, help='Path to the processed data directory.')
         parser.add_argument('--output_dir', type=str, help='Directory to save the output QA JSON file.')
-        parser.add_argument('--dataset', type=str, help='Name of the dataset.')
         parser.add_argument('--num_subsample', type=int, default=BaseQAGeneratorConfig.num_subsample, help='Max number of questions to generate per scene.')
         parser.add_argument('--num_workers', type=int, default=BaseQAGeneratorConfig.num_workers, help='Number of worker processes for parallel scene processing.')
         
@@ -83,10 +89,10 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
     
     def _load_annotations(self):
         split_type = self.config.split_type
-        dataset_name_lower = self.config.dataset.lower()
+        dataset_name_snake = camera_to_snake(self.config.dataset)
         metadata_path = Path(self.config.processed_data_path)
         assert metadata_path.exists(), f"Metadata path does not exist: {metadata_path}"
-        scene_meta_path = metadata_path / f"{dataset_name_lower}_metadata_{split_type}.json"
+        scene_meta_path = metadata_path / f"{dataset_name_snake}_metadata_{split_type}.json"
         self.scene_annos = self._load_json_batched(scene_meta_path)
         self.scene_list = list(self.scene_annos.keys()) if self.scene_annos else []
         
@@ -189,7 +195,7 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
             logger.error(f"An unexpected error occurred during saving: {e}")
     
     def run(self):
-        scene_list = self.scene_list
+        scene_list = self.scene_list[:10]
         if not scene_list:
             logger.warning("No scenes to loaded. Exiting processing.")
             return

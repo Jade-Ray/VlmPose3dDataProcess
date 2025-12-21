@@ -88,7 +88,7 @@ def main():
     # Arguments for output and processing behavior (from BaseProcessorConfig)
     parser.add_argument('--save_dir', type=str, default=SimplePoseProcessorConfig.save_dir, # Use base default initially
                         help=f'Directory to save the output JSON metadata (defaults to processed_dir: {SimplePoseProcessorConfig.processed_dir}).')
-    parser.add_argument('--output_filename', type=str, default="simple_pose_metadata.json", # Keep default name
+    parser.add_argument('--output_filename', type=str, default="simple_pose_metadata_train", # Keep default name
                         help='Name of the output JSON file.')
     parser.add_argument('--num_workers', type=int, default=BaseProcessorConfig.num_workers,
                         help='Number of worker processes for parallel processing.')

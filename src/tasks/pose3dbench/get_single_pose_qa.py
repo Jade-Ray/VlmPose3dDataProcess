@@ -15,9 +15,7 @@ logger = logging.getLogger(__name__)
 class SinglePoseQAGeneratorConfig(BaseQAGeneratorConfig):
     """Configuration for single pose question-answer generation."""
     output_filename: str = "" # If empty, will be set based on task_name
-    processed_data_path: str = "processed_data"
     dataset: str = "SinglePose"
-    split_type: str = "train"
     question_template: str = "SINGLE_POSE_TEMPLATE"
     task_name: str = "single_pose"
 
@@ -30,6 +28,7 @@ class SinglePoseQAGenerator(BaseQAGenerator[SinglePoseQAGeneratorConfig]):
     
     @classmethod
     def _add_specific_arguments(cls, parser):
+        parser.add_argument('--dataset', type=str, default=SinglePoseQAGeneratorConfig.dataset, help='Name of the dataset.')
         parser.add_argument('--question_template', type=str, default=SinglePoseQAGeneratorConfig.question_template, help='Name of the question template constant from question_templates.py.')
         parser.add_argument('--output_filename', type=str, default=SinglePoseQAGeneratorConfig.output_filename, help='the output JSON filename (e.g., "qa_obj_count").')
     
