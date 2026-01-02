@@ -527,6 +527,7 @@ class SMPLVisualizerBase:
         skeleton_alpha: float = 0.8,
         joint_linewidth: int = 1,
         joint_alpha: float = 0.6,
+        rotate_view_factor: float = 0.,
     ):
         from matplotlib.animation import FuncAnimation
         
@@ -590,7 +591,7 @@ class SMPLVisualizerBase:
             title.set_text(f'Frame {frame + 1}/{num_frames}')
             
             # 旋转视角（可选）
-            ax.view_init(elev=10, azim=45 + frame * 0.5)
+            ax.view_init(elev=10, azim=45 + frame * rotate_view_factor)
             
             return lines + [scatter, title] + (labels if show_joint_labels else [])
         

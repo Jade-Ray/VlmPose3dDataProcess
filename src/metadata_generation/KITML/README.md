@@ -1,0 +1,3 @@
+# The KIT Motion-Language Dataset
+
+Linking human motion and natural language is of great interest for the generation of semantic representations of human activities as well as for the generation of robot activities based on natural language input. However, while there have been years of research in this area, no standardized and openly available dataset exists to support the development and evaluation of such systems. We therefore propose the The KIT Motion-Language Dataset, which is large, open, and extensible.
