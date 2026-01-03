@@ -1,3 +1,9 @@
+VAE_POSE_TEMPLATE = """
+请根据以下人体动作描述生成运动特征。
+动作描述：{ACTION_DESC}
+""".strip()
+
+
 SIMPLE_POSE_TEMPLATE = """
 请根据以下人体动作描述生成连续 {NUM_FRAMES} 帧的 {NUM_OBJ} 个 3D 人体姿态轴角序列。
 动作描述：{ACTION_DESC}

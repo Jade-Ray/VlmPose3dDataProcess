@@ -20,7 +20,7 @@ def convert_to_conversational_format(file_path):
         converted_data = []
         for item in data:
             question = item['question']
-            answer = item['ground_truth']
+            answer = item.get('ground_truth', "")
             conversations = [
                 {"from": "human", "value": question},
                 {"from": "gpt", "value": answer}
@@ -29,6 +29,8 @@ def convert_to_conversational_format(file_path):
                 "id": item["id"],
                 "data_source": item["dataset"],
                 "scene_name": item["scene_name"],
+                "latent_name": item["latent_name"],
+                "motion_length": item["length"],
                 "question_type": item["question_type"],
                 "conversations": conversations,
             })

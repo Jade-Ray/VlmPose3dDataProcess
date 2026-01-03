@@ -75,7 +75,7 @@ def main():
         num_subsample=args.num_subsample,
         output_filename=args.output_filename,
         processed_data_path=args.processed_data_path,
-        split_type=args.split_type,
+        split=args.split_type,
         question_template=args.question_template,
         dataset=args.dataset
     )

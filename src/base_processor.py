@@ -17,19 +17,6 @@ logger = get_logger(__name__, log_file="metadata_generation.log")
 TConfig = TypeVar('TConfig', bound='BaseProcessorConfig')
 
 
-@dataclass
-class BaseProcessorConfig:
-    """Base configuration for scene processing."""
-    save_dir: str = "output"
-    output_filename: str = "metadata.json"
-    num_workers: int = 1
-    overwrite: bool = False
-    random_seed: int = 42
-    scene_list_file: str = "" # Should be set by subclasses or arguments
-    split: str = "" # Should be set by subclasses or arguments
-    dataset_name: str = "" # Should be set by subclasses or arguments
-
-
 def json_converter(obj):
     """Custom JSON converter to handle non-serializable types like numpy arrays/numbers."""
     if isinstance(obj, np.integer):
@@ -43,6 +30,23 @@ def json_converter(obj):
     elif isinstance(obj, bytes):
         return obj.decode('utf-8')
     raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+
+@dataclass
+class BaseProcessorConfig:
+    """Base configuration for scene processing."""
+    save_dir: str = "output"
+    output_filename: str = ""
+    num_workers: int = 1
+    overwrite: bool = False
+    random_seed: int = 42
+    split: str = "" # Should be set by subclasses or arguments
+    dataset: str = "" # Should be set by subclasses or arguments
+    dataset_dir: str = "" # Should be set by subclasses or arguments
+    
+    def __post_init__(self):
+        if self.output_filename == "":
+            self.output_filename = f"{self.dataset}_metadata_{self.split}"  
 
 
 class AbstractSceneProcessor(ABC, Generic[TConfig]):

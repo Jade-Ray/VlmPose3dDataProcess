@@ -19,21 +19,15 @@ logger = logging.getLogger(__name__)
 TConfig = TypeVar('TConfig', bound='BaseQAGeneratorConfig')
 
 
-def camera_to_snake(name: str) -> str:
-    """Convert CamelCase or camelCase to snake_case."""
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-
-
 @dataclass
 class BaseQAGeneratorConfig:
     """Base configuration for question-answer generation."""
     output_dir: str = "output"
     num_workers: int = 1
-    num_subsample: int = 6
+    num_subsample: int = 10
     output_filename: str = "" # Should be set by subclasses or arguments
     processed_data_path: str = "" # Should be set by subclasses or arguments
-    split_type: str = "" # Should be set by subclasses or arguments
+    split: str = "" # Should be set by subclasses or arguments
     question_template: str = "" # Should be set by subclasses or arguments
     dataset : str = "" # Should be set by subclasses or arguments
     task_name: str = "" # Should be set by subclasses or arguments
@@ -57,7 +51,7 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
         
         assert self.config.processed_data_path is not None, "processed_data_path must be provided"
         assert self.config.dataset is not None, "dataset must be provided"
-        assert self.config.split_type is not None, "split_type must be provided"
+        assert self.config.split is not None, "split must be provided"
         
         self._load_annotations()
         self.question_template = None if self.config.question_template is None else getattr(prompt_templates, self.config.question_template)
@@ -68,11 +62,14 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
         parser = argparse.ArgumentParser(description=desc)
         
         # Common arguments
-        parser.add_argument('--split_type', type=str, help='Type of split to use (e.g., "train", "val", "test").')
+        parser.add_argument('--split', type=str, help='Type of split to use (e.g., "train", "val", "test").')
         parser.add_argument('--processed_data_path', type=str, required=True, help='Path to the processed data directory.')
         parser.add_argument('--output_dir', type=str, help='Directory to save the output QA JSON file.')
+        parser.add_argument('--output_filename', type=str, help='the output JSON filename (e.g., "qa_obj_count").')
         parser.add_argument('--num_subsample', type=int, default=BaseQAGeneratorConfig.num_subsample, help='Max number of questions to generate per scene.')
         parser.add_argument('--num_workers', type=int, default=BaseQAGeneratorConfig.num_workers, help='Number of worker processes for parallel scene processing.')
+        parser.add_argument('--question_template', type=str, help='Name of the question template constant from question_templates.py.')
+        parser.add_argument('--dataset', type=str, help='Name of the dataset.')
         
         return parser
     
@@ -88,19 +85,22 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
         return parser.parse_args()
     
     def _load_annotations(self):
-        split_type = self.config.split_type
-        dataset_name_snake = camera_to_snake(self.config.dataset)
+        split = self.config.split
+        dataset_name = self.config.dataset
         metadata_path = Path(self.config.processed_data_path)
         assert metadata_path.exists(), f"Metadata path does not exist: {metadata_path}"
-        scene_meta_path = metadata_path / f"{dataset_name_snake}_metadata_{split_type}.json"
+        scene_meta_path = metadata_path / f"{dataset_name}_metadata_{split}.json"
         self.scene_annos = self._load_json_batched(scene_meta_path)
+        if 'data' in self.scene_annos:
+            self.scene_annos = self.scene_annos['data']
         self.scene_list = list(self.scene_annos.keys()) if self.scene_annos else []
         
-        logger.info(f"Processed data paths constructed based on : {self.config.processed_data_path}, Dataset: {self.config.dataset}, Split: {split_type}")
+        logger.info(f"Processed data paths constructed based on : {self.config.processed_data_path}, Dataset: {self.config.dataset}, Split: {split}")
         if not self.scene_annos:
             logger.warning(f"Scene metadata from {scene_meta_path} is empty or failed to load.")
         else:
-            logger.info(f"Scene metadata path: {scene_meta_path}")
+            logger.info(f"Load scene metadata path: {scene_meta_path}")
+            logger.info(f"Total scenes loaded: {len(self.scene_list)}")
     
     def _load_json_batched(self, file_path):
         """Load JSON data, supporting both single and batched files."""
@@ -181,7 +181,7 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
         pass
     
     def _save_results(self, all_qa_list: List):
-        output_dir = Path(self.config.output_dir) / self.config.split_type
+        output_dir = Path(self.config.output_dir) / self.config.split
         qa_path = output_dir / self.config.output_filename
         output_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Saving QA pairs to {qa_path}...")
@@ -195,7 +195,7 @@ class BaseQAGenerator(ABC, Generic[TConfig]):
             logger.error(f"An unexpected error occurred during saving: {e}")
     
     def run(self):
-        scene_list = self.scene_list[:10]
+        scene_list = self.scene_list
         if not scene_list:
             logger.warning("No scenes to loaded. Exiting processing.")
             return
