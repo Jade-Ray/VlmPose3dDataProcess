@@ -119,7 +119,7 @@ def get_edges_from_parents(parents: list | np.ndarray):
     for i in range(1, len(parents)):
         p = parents[i]
         if p >= 0:
-            edges.append((p, i))
+            edges.append((int(p), i))
     return edges
 
 
@@ -533,6 +533,16 @@ class SMPLVisualizerBase:
         
         num_frames = len(joints_3d_sequence)
         all_joints = np.array(joints_3d_sequence) if isinstance(joints_3d_sequence, list) else joints_3d_sequence  # (N, J, 3)
+        MINS = all_joints.min(axis=(0,1))
+        MAXS = all_joints.max(axis=(0,1))
+        height_offset = MINS[1]
+        
+        # 调整所有帧的y坐标，使最低点在y=0处
+        all_joints[:, :, 1] -= height_offset
+        # 调整所有帧的x,z坐标，使根节点在原点处
+        all_joints[..., 0] -= all_joints[:, 0:1, 0]
+        all_joints[..., 2] -= all_joints[:, 0:1, 2]
+        
         fig = plt.figure(figsize=fig_size)
         ax = fig.add_subplot(111, projection='3d')
         
@@ -590,8 +600,10 @@ class SMPLVisualizerBase:
             # 更新标题
             title.set_text(f'Frame {frame + 1}/{num_frames}')
             
-            # 旋转视角（可选）
+            # 旋转视角
             ax.view_init(elev=10, azim=45 + frame * rotate_view_factor)
+            # 设置适当的距离
+            ax.dist = 7.5
             
             return lines + [scatter, title] + (labels if show_joint_labels else [])
         
